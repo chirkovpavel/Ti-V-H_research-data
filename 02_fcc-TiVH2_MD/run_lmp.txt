@@ -1,0 +1,6 @@
+#!/bin/sh
+
+LMP_EXE="/path/to/your/lammps/exe"
+NPROC=16
+
+mpirun -np $NPROC $LMP_EXE -in in.run_md

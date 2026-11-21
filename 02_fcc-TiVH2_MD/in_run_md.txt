@@ -1,0 +1,69 @@
+
+#--------Settings for MD simulation----------------
+variable	Pot	string	"../01_trained_potential/pot_20.almtp"
+
+variable	Ntr	equal	6
+variable	a0	equal	4.40
+variable	conc_V	equal	0.4
+variable	conc_H	equal	1.6
+variable	T	equal	800
+
+variable	ts	equal	0.0005		# timestep
+variable	nevery	equal	100
+
+
+units		metal
+boundary	p p p
+atom_style	atomic
+
+read_data fcc_TiH2_unit.data extra/atom/types 1
+
+replicate ${Ntr} ${Ntr} ${Ntr}
+
+variable l0x equal lx
+variable l1 equal ${l0x}*${a0}
+
+variable l0y equal ly
+variable l2 equal ${l0y}*${a0}
+
+variable l0z equal lz
+variable l3 equal ${l0z}*${a0}
+
+change_box all x final 0 ${l1} y final 0 ${l2} z final 0 ${l3} remap
+
+print "------------ ${conc_V} ------------"
+
+set type 2 type/ratio 3 ${conc_V} 678984
+
+
+group hydro type 1
+group met type 2 3
+
+variable	n0	equal	count(hydro)
+variable	n2	equal	count(met)
+variable	n_del	equal	${n0}-round(${conc_H}*${n2})
+
+delete_atoms random count ${n_del} yes hydro NULL 457892 compress yes
+
+neighbor 0.0 bin
+neigh_modify every 1 delay 0 check no
+
+mass 1 1.0007
+mass 2 47.88
+mass 3 50.941
+
+pair_style	mtp ${Pot}
+pair_coeff	* *
+
+
+velocity all create $T 8967799
+
+thermo_style custom step time spcpu temp pe ke etotal press pxx pyy pzz lx ly lz
+thermo ${nevery}
+
+timestep	${ts}
+
+fix f1 all npt temp ${T} ${T} 0.1 iso 0 0 1.0
+
+run 10000
+
